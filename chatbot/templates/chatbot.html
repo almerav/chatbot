@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Interface</title>
+    <link rel="stylesheet" href="../static/chatbot.css">
+</head>
+<body>
+    <nav>
+        <div class="navbar">
+            <div class="logo">FeasTapp</div>
+            <div class="menu">
+                <a href="#home">HOME</a>
+                <a href="#about">ABOUT</a>
+                <a href="#scan">SCAN</a>
+                <a href="#chatbot">CHATBOT</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="chat-container">
+        <div class="chat-area">
+            <img src="{{ url_for('static', filename='img/gemini.png') }}" class="chat-logo">
+            <p class="welcome-message">HOW CAN I HELP YOU TODAY?</p>
+            <div class="chat-messages" id="chat-box"></div>  <!-- Ensure this ID matches your JS reference -->
+            <div class="message-box">
+                <input type="text" id="user-input" placeholder="Write your message...">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+        
+    </div>
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="../static/chatbot.js"></script>
+</body>
+</html>
