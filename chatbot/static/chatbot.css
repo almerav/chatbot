@@ -43,7 +43,7 @@ body, html {
 }
 
 .chat-logo {
-    width: 100px;  /* Adjust size as needed */
+    width: 100px;
 }
 
 .welcome-message {
@@ -80,7 +80,7 @@ body, html {
     flex-direction: column;
     overflow-y: auto;
     padding: 10px;
-    height: 400px;  /* Adjust based on your design needs */
+    height: 400px;
 }
 
 .message {
@@ -95,13 +95,34 @@ body, html {
 
 .user-message {
     align-self: flex-end;
-    background-color: #007BFF; /* Blue background for user messages */
-    border-top-right-radius: 0; /* Optional: style to make bubbles appear like speech */
+    background-color: #007BFF;
+    border-top-right-radius: 0;
 }
 
 .bot-response {
     align-self: flex-start;
-    background-color: #34B7F1; /* Lighter blue for bot messages */
-    border-top-left-radius: 0; /* Optional: style to make bubbles appear like speech */
+    background-color: #34B7F1;
+    border-top-left-radius: 0;
 }
 
+.button-options {
+    margin-top: 20px;
+}
+
+.button-options button {
+    padding: 10px 20px;
+    margin: 5px;
+    background-color: #4CAF50;
+    border: none;
+    color: white;
+    cursor: pointer;
+    border-radius: 10px;
+}
+
+.button-options button:hover {
+    background-color: #45a049;
+}
+
+#message-box {
+    display: none;
+}

@@ -1,9 +1,12 @@
+import os
 from flask import Flask, render_template, request, jsonify
 import google.generativeai as genai
 
+# Initialize Flask app
 app = Flask(__name__)
 
-API_KEY = 'AIzaSyAb4CKQ23uIo9PH-FwkGmoB3yHoJHaYuOI'  # Ensure this is managed securely in production
+# Configure Generative AI
+API_KEY = 'AIzaSyAb4CKQ23uIo9PH-FwkGmoB3yHoJHaYuOI'
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('gemini-pro')
 chat = model.start_chat(history=[])
@@ -15,25 +18,39 @@ def index():
 @app.route('/send_message', methods=['POST'])
 def send_message():
     user_message = request.json['message']
-    if is_dish_related(user_message):
-        try:
-            response = chat.send_message(user_message)
-            bot_response = format_response(response.text)
-            return jsonify({'response': bot_response})
-        except Exception as e:
-            return jsonify({'response': "Sorry, I encountered an error. Please try again."})
-    else:
-        return jsonify({'response': "I'm here to recommend dishes based on your ingredients. Please ask about dishes!"})
+    show_buttons = False
+    try:
+        response = chat.send_message(user_message)
+        bot_response = format_response(response.text)
+        recipe_name = extract_recipe_name(bot_response)
+        if recipe_name == "Unknown Recipe":
+            bot_response_with_name = bot_response
+        else:
+            # Ensure the recipe name is only included once
+            if f"**{recipe_name}**" not in bot_response:
+                bot_response_with_name = f"**Recipe Name:** {recipe_name}\n\n" + bot_response
+            else:
+                bot_response_with_name = bot_response.replace(f"**{recipe_name}**", f"**Recipe Name:** {recipe_name}")
+        show_buttons = True  # Show buttons after recommending a recipe
+        return jsonify({'response': bot_response_with_name, 'show_buttons': show_buttons, 'recipe_name': recipe_name})
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({'response': "Sorry, I encountered an error. Please try again.", 'show_buttons': False})
 
 def format_response(text):
     if not text.endswith(('.', '!', '?')):
         text += '.'
     return text.replace('\n', '<br>')
 
-def is_dish_related(message):
-    # Very simple keyword check - you might want a more sophisticated NLP approach
-    keywords = ['dish', 'recipe', 'cook', 'ingredient', 'cooking', 'eat']
-    return any(keyword in message.lower() for keyword in keywords)
+def extract_recipe_name(text):
+    # Extract the recipe name from the response text
+    # Example: "**Recipe Name**"
+    try:
+        start = text.index('**') + 2
+        end = text.index('**', start)
+        return text[start:end].strip()
+    except ValueError:
+        return "Unknown Recipe"
 
 if __name__ == '__main__':
     app.run(debug=True)
