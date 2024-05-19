@@ -5,11 +5,9 @@ import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('get-started-btn').addEventListener('click', function() {
         var chatBox = document.getElementById('chat-box');
-        var messageBox = document.getElementById('message-box');
-        
-        chatBox.innerHTML += '<div class="message bot-response">Great! Please tell me what ingredients you have or ask me anything related to cooking.</div>';
+        chatBox.innerHTML += '<div class="message bot-response">Which cuisine do you prefer?</div>';
+        displayButtons(["Filipino", "Chinese", "Korean", "Japanese", "Thai", "Indian", "French", "Brazilian", "Mexican"]);
         chatBox.scrollTop = chatBox.scrollHeight;
-        messageBox.style.display = 'block';
         this.style.display = 'none';  // Hide the Get Started button
     });
 
@@ -24,10 +22,28 @@ document.addEventListener('DOMContentLoaded', function() {
         sendMessage();
     });
 
-    document.getElementById('recommend-another-btn').addEventListener('click', function() {
-        sendButtonMessage('Recommend another recipe');
+    document.getElementById('button-options').addEventListener('click', function(event) {
+        if (event.target.tagName === 'BUTTON') {
+            const message = event.target.textContent;
+            if (message === 'Save Recipe') {
+                saveRecipe();
+            } else {
+                sendButtonMessage(message);
+            }
+        }
     });
 });
+
+function displayButtons(buttons) {
+    var buttonOptions = document.getElementById('button-options');
+    buttonOptions.innerHTML = '';
+    buttons.forEach(function(buttonText) {
+        var button = document.createElement('button');
+        button.textContent = buttonText;
+        buttonOptions.appendChild(button);
+    });
+    buttonOptions.style.display = 'block';
+}
 
 function sendMessage() {
     var input = document.getElementById('user-input');
@@ -57,14 +73,15 @@ function sendMessageToServer(message) {
                 document.getElementById('user-input').value = '';
 
                 if (data.show_buttons) {
-                    buttonOptions.style.display = 'block';
+                    displayButtons(data.buttons);
                 } else {
                     buttonOptions.style.display = 'none';
                 }
 
                 // Store the recipe name in a data attribute
-                chatBox.setAttribute('data-recipe-name', data.recipe_name);
-                console.log("Recipe Name: ", data.recipe_name);  // Log the recipe name for debugging
+                const recipeName = extractRecipeName(data.response);
+                chatBox.setAttribute('data-recipe-name', recipeName || '');
+                console.log("Recipe Name: ", recipeName);  // Log the recipe name for debugging
             },
             error: function(xhr, status, error) {
                 console.error("Error when sending/receiving message: ", error);
@@ -74,12 +91,17 @@ function sendMessageToServer(message) {
     }
 }
 
+function extractRecipeName(text) {
+    const match = text.match(/\*\*(.*?)\*\*/);
+    return match ? match[1] : "Unknown Recipe";
+}
+
 async function saveRecipe() {
     const chatBox = document.getElementById('chat-box');
     const recipeName = chatBox.getAttribute('data-recipe-name');
     console.log("Saving Recipe: ", recipeName);  // Log the recipe name being saved
 
-    if (recipeName === "Unknown Recipe") {
+    if (recipeName === "Unknown Recipe" || !recipeName) {
         chatBox.innerHTML += '<div class="message bot-response">Failed to save recipe. No recipe name found.</div>';
         return;
     }

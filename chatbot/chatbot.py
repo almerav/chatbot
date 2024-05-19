@@ -11,46 +11,94 @@ genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('gemini-pro')
 chat = model.start_chat(history=[])
 
+# Store session states in a dictionary (for simplicity, in production consider using a more robust solution)
+sessions = {}
+
 @app.route('/')
 def index():
     return render_template('chatbot.html')
 
 @app.route('/send_message', methods=['POST'])
 def send_message():
+    session_id = request.json.get('session_id', 'default')
     user_message = request.json['message']
+    
+    if session_id not in sessions:
+        sessions[session_id] = {'state': 'ask_cuisine'}
+
+    state = sessions[session_id]['state']
+    response_text = ""
     show_buttons = False
+    buttons = []
+    dish_name = ""
+
     try:
-        response = chat.send_message(user_message)
-        bot_response = format_response(response.text)
-        recipe_name = extract_recipe_name(bot_response)
-        if recipe_name == "Unknown Recipe":
-            bot_response_with_name = bot_response
-        else:
-            # Ensure the recipe name is only included once
-            if f"**{recipe_name}**" not in bot_response:
-                bot_response_with_name = f"**Recipe Name:** {recipe_name}\n\n" + bot_response
+        if state == 'ask_cuisine':
+            response_text = "Which cuisine do you prefer?"
+            buttons = ["Filipino", "Chinese", "Korean", "Japanese", "Thai", "Indian", "French", "Brazilian", "Mexican"]
+            sessions[session_id]['state'] = 'ask_ingredients'
+        elif state == 'ask_ingredients':
+            sessions[session_id]['cuisine'] = user_message
+            response_text = f"You chose {user_message} cuisine. Please list the ingredients you have."
+            sessions[session_id]['state'] = 'recommend_dishes'
+        elif state == 'recommend_dishes':
+            sessions[session_id]['ingredients'] = user_message
+            cuisine = sessions[session_id]['cuisine']
+            ingredients = user_message
+            response = chat.send_message(f"Recommend top 5 {cuisine} dishes using {ingredients}.")
+            dish_recommendations = response.text.split('\n')[:5]
+            response_text = "Here are the top 5 dishes I recommend:<br><br>"
+            response_text += "<ul>"
+            for dish in dish_recommendations:
+                response_text += f"<li>{dish.strip()}</li>"
+            response_text += "</ul>"
+            buttons = [dish.strip() for dish in dish_recommendations]
+            buttons.append("Recommend another set of dishes")
+            sessions[session_id]['state'] = 'show_dish_details'
+        elif state == 'show_dish_details':
+            if user_message == "Recommend another set of dishes":
+                cuisine = sessions[session_id]['cuisine']
+                ingredients = sessions[session_id]['ingredients']
+                response = chat.send_message(f"Recommend another 5 {cuisine} dishes using {ingredients}.")
+                dish_recommendations = response.text.split('\n')[:5]
+                response_text = "Here are another 5 dishes I recommend:<br><br>"
+                response_text += "<ul>"
+                for dish in dish_recommendations:
+                    response_text += f"<li>{dish.strip()}</li>"
+                response_text += "</ul>"
+                buttons = [dish.strip() for dish in dish_recommendations]
+                buttons.append("Recommend another set of dishes")
             else:
-                bot_response_with_name = bot_response.replace(f"**{recipe_name}**", f"**Recipe Name:** {recipe_name}")
-        show_buttons = True  # Show buttons after recommending a recipe
-        return jsonify({'response': bot_response_with_name, 'show_buttons': show_buttons, 'recipe_name': recipe_name})
+                dish_name = user_message
+                response = chat.send_message(f"Give details for the {sessions[session_id]['cuisine']} dish named {dish_name}. Include nutritional information, common allergens, and possible substitutions.")
+                response_text = format_dish_details(response.text)
+                buttons = ["Save Recipe", "Ask for Recommendation"]
+                sessions[session_id]['state'] = 'ask_cuisine'
+                show_buttons = True
+
+        return jsonify({'response': response_text, 'show_buttons': True if buttons else False, 'buttons': buttons, 'recipe_name': dish_name})
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({'response': "Sorry, I encountered an error. Please try again.", 'show_buttons': False})
 
-def format_response(text):
-    if not text.endswith(('.', '!', '?')):
-        text += '.'
-    return text.replace('\n', '<br>')
-
-def extract_recipe_name(text):
-    # Extract the recipe name from the response text
-    # Example: "**Recipe Name**"
-    try:
-        start = text.index('**') + 2
-        end = text.index('**', start)
-        return text[start:end].strip()
-    except ValueError:
-        return "Unknown Recipe"
+def format_dish_details(text):
+    sections = text.split("\n\n")
+    formatted_text = ""
+    for section in sections:
+        if section.startswith("Ingredients"):
+            formatted_text += f"<strong>{section.split(':')[0]}:</strong><br>{section.split(':')[1].strip().replace('\n', '<br>')}"
+        elif section.startswith("Instructions"):
+            formatted_text += f"<strong>{section.split(':')[0]}:</strong><br>{section.split(':')[1].strip().replace('\n', '<br>')}"
+        elif section.startswith("Nutritional Information"):
+            formatted_text += f"<strong>{section.split(':')[0]}:</strong><br>{section.split(':')[1].strip().replace('\n', '<br>')}"
+        elif section.startswith("Common Allergens"):
+            formatted_text += f"<strong>{section.split(':')[0]}:</strong><br>{section.split(':')[1].strip().replace('\n', '<br>')}"
+        elif section.startswith("Possible Substitutions"):
+            formatted_text += f"<strong>{section.split(':')[0]}:</strong><br>{section.split(':')[1].strip().replace('\n', '<br>')}"
+        else:
+            formatted_text += section.strip().replace('\n', '<br>')
+        formatted_text += "<br><br>"
+    return formatted_text
 
 if __name__ == '__main__':
     app.run(debug=True)

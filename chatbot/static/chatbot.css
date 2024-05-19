@@ -122,7 +122,3 @@ body, html {
 .button-options button:hover {
     background-color: #45a049;
 }
-
-#message-box {
-    display: none;
-}
