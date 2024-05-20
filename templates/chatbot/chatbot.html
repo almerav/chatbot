@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Interface</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chatbot.css') }}">
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js"></script>
+    <!-- Firebase Firestore -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js"></script>
+    <!-- Your Firebase Configuration -->
+    <script type="module" src="{{ url_for('static', filename='js/firebase-config.js') }}"></script>
+</head>
+<body>
+    <nav>
+        <div class="navbar">
+            <div class="logo">FeasTapp</div>
+            <div class="menu">
+                <a href="{{ url_for('main') }}">HOME</a>
+                <a href="http://127.0.0.1:5001">SCAN</a>
+                <a href="http://127.0.0.1:5000">CHATBOT</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="chat-container">
+        <div class="chat-area">
+            <img src="{{ url_for('static', filename='img/gemini.png') }}" class="chat-logo">
+            <p class="welcome-message"><b>What's in your kitchen? Let's find a recipe!</b></p>
+            <div class="chat-messages" id="chat-box"></div>
+            <button id="get-started-btn">Let's get started</button>
+            <div class="button-options" id="button-options" style="display: none;"></div>
+            <div class="message-box" id="message-box" style="display: none;">
+                <input type="text" id="user-input" placeholder="Enter your ingredients here...">
+                <button id="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script type="module" src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+</body>
+</html>
