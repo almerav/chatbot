@@ -54,7 +54,9 @@ function displayButtons(buttons) {
 function sendMessage() {
     var input = document.getElementById('user-input');
     var message = input.value.trim();
-    sendMessageToServer(message);
+    if (message) {
+        sendMessageToServer(message);
+    }
 }
 
 function sendButtonMessage(message) {
